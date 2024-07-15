@@ -4,12 +4,12 @@ import requests
 import os
 from bs4 import BeautifulSoup
 
-TASK_INTERVAL = 5
+task_interval = os.environ.get("TASK_INTERVAL", 5)
+server_address = os.environ["DL_SCRIPT_ADDRESS"]
 
 admin_token_str = os.environ.get("ADMIN_TOKEN", None)
 auth_header = {"token": admin_token_str}
 client_name = os.environ["DL_SCRIPT_NAME"]
-server_address = os.environ["DL_SCRIPT_ADDRESS"]
 request_endpoint = f"{server_address}/request_job"
 failed_endpoint = f"{server_address}/job_fail"
 submit_endpoint = f"{server_address}/submit_job"
@@ -108,8 +108,8 @@ def do_task():
 last_task_time = time.time()
 while True:
     time_since_last_task = time.time() - last_task_time
-    if time_since_last_task >= TASK_INTERVAL:
+    if time_since_last_task >= task_interval:
         do_task()
         last_task_time = time.time()
     else:
-        time.sleep(TASK_INTERVAL - time_since_last_task)
+        time.sleep(task_interval - time_since_last_task)

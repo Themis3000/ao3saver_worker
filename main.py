@@ -4,7 +4,7 @@ import requests
 import os
 from bs4 import BeautifulSoup
 
-task_interval = os.environ.get("TASK_INTERVAL", 5)
+task_interval = int(os.environ.get("TASK_INTERVAL", 5))
 server_address = os.environ["DL_SCRIPT_ADDRESS"]
 
 admin_token_str = os.environ.get("ADMIN_TOKEN", None)

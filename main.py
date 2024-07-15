@@ -3,6 +3,7 @@ from typing import List
 import requests
 import os
 from bs4 import BeautifulSoup
+import sys, signal
 
 task_interval = int(os.environ.get("TASK_INTERVAL", 5))
 server_address = os.environ["DL_SCRIPT_ADDRESS"]
@@ -13,6 +14,14 @@ client_name = os.environ["DL_SCRIPT_NAME"]
 request_endpoint = f"{server_address}/request_job"
 failed_endpoint = f"{server_address}/job_fail"
 submit_endpoint = f"{server_address}/submit_job"
+
+
+def signal_handler(signal, frame):
+    print("\nexiting worker...")
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, signal_handler)
 
 proxies = {}
 if "PROXYADDRESS" in os.environ:

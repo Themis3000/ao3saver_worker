@@ -102,6 +102,12 @@ def do_task():
             images_meta[f"supporting_objects_{i}_etag"] = img_response.headers.get("ETag", "")
             print("fetched image!")
 
+            # Backend does not support more than 1000 fields.
+            # As a temporary measure, cap the number of images that can be archived at once.
+            if len(images_meta) >= 496:
+                print("capping images")
+                break
+
     print(f"successfully downloaded {job_info['work_id']} updated at {job_info['updated']}, reporting to server...")
     submit_res = requests.post(submit_endpoint,
                                headers=auth_header,

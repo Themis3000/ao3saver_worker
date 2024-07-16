@@ -1,4 +1,5 @@
 import time
+from multiprocessing import Process
 from typing import List
 import requests
 import os
@@ -7,6 +8,7 @@ import sys, signal
 
 task_interval = int(os.environ.get("TASK_INTERVAL", 5))
 server_address = os.environ["DL_SCRIPT_ADDRESS"]
+download_timeout = int(os.environ.get("DOWNLOAD_TIMEOUT", 240))
 
 admin_token_str = os.environ.get("ADMIN_TOKEN", None)
 auth_header = {"token": admin_token_str}
@@ -123,11 +125,22 @@ def do_task():
     print("Work report success!")
 
 
-last_task_time = time.time()
-while True:
-    time_since_last_task = time.time() - last_task_time
-    if time_since_last_task >= task_interval:
-        do_task()
-        last_task_time = time.time()
-    else:
-        time.sleep(task_interval - time_since_last_task)
+if __name__ == "__main__":
+    processes = []
+    while True:
+        for i, process_entry in enumerate(processes):
+            process, process_start_time = process_entry
+            if not process.is_alive():
+                processes.pop(i)
+                continue
+            if time.time() - process_start_time > download_timeout:
+                process.kill()
+                processes.pop(i)
+
+        if 2 > len(processes):
+            process = Process(target=do_task)
+            process.start()
+            processes.append((process, time.time()))
+            continue
+
+        time.sleep(task_interval)

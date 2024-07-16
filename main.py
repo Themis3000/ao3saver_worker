@@ -141,6 +141,5 @@ if __name__ == "__main__":
             process = Process(target=do_task)
             process.start()
             processes.append((process, time.time()))
-            continue
 
         time.sleep(task_interval)

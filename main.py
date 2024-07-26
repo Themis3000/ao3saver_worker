@@ -126,6 +126,10 @@ def do_task():
 
 
 if __name__ == "__main__":
+    if os.environ.get("DEBUG_MODE", "FALSE").lower() == "true":
+        do_task()
+        exit()
+
     processes = []
     while True:
         for i, process_entry in enumerate(processes):

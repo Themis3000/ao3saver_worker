@@ -75,7 +75,7 @@ def do_task():
         i = -1
         for url in img_urls:
             cache_info = job_info["cache_infos"].get(url, None)
-            headers = {}
+            headers = {"User-Agent": "Mozilla/5.0"}
             if cache_info:
                 print(f"found cache info for {url}")
                 headers["If-None-Match"] = cache_info["etag"]

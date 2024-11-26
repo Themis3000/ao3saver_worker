@@ -66,63 +66,45 @@ def do_task():
         return
     data = dl_response.content
 
-    # fetch any images, if this is a html page.
-    images = []
-    images_meta = {}
-    if job_info["work_format"] == "html":
-        soup = BeautifulSoup(data, 'html.parser')
-        img_urls: List[str] = [img['src'] for img in soup.find_all('img', src=True)]
-        i = -1
-        for url in img_urls:
-            cache_info = job_info["cache_infos"].get(url, None)
-            headers = {"User-Agent": "Mozilla/5.0"}
-            if cache_info:
-                print(f"found cache info for {url}")
-                headers["If-None-Match"] = cache_info["etag"]
-
-            print(f"fetching image {url}")
-            img_response = requests.get(url, headers=headers, proxies=proxies)
-
-            if not img_response.ok:
-                print("couldn't fetch image")
-                continue
-
-            i = i + 1
-
-            if img_response.status_code == 304:
-                print("Image hit cache!")
-                images_meta[f"cached_{i}_object_id"] = cache_info["object_id"]
-                images_meta[f"cached_{i}_url"] = cache_info["url"]
-                continue
-
-            images.append((f"supporting_objects_{i}", (
-                url.split("/")[-1],
-                img_response.content,
-                img_response.headers.get("Content-Type", "")
-            )))
-            images_meta[f"supporting_objects_{i}_url"] = url
-            images_meta[f"supporting_objects_{i}_etag"] = img_response.headers.get("ETag", "")
-            print("fetched image!")
-
-            # Backend does not support more than 1000 fields.
-            # As a temporary measure, cap the number of images that can be archived at once.
-            if len(images_meta) >= 496:
-                print("capping images")
-                break
-
     print(f"successfully downloaded {job_info['work_id']} updated at {job_info['updated']}, reporting to server...")
     submit_res = requests.post(submit_endpoint,
                                headers=auth_header,
-                               files=[("work", ("work", data, "")), *images],
+                               files=[("work", ("work", data, ""))],
                                data={
                                    "dispatch_id": job_info["dispatch_id"],
-                                   "report_code": job_info["report_code"], **images_meta})
+                                   "report_code": job_info["report_code"]})
 
     if not submit_res.ok:
         print(f"Work report has failed")
         return
 
     print("Work report success!")
+
+    submit_json = submit_res.json()
+    if len(submit_json["unfetched_objects"]) <= 0:
+        print("No unfetched objects found. Ending job.")
+        return
+
+    for unfetched_object in submit_json["unfetched_objects"]:
+        print(f"fetching {unfetched_object}")
+        headers = {"User-Agent": "Mozilla/5.0"}
+        if unfetched_object.get("etag"):
+            print(f"found cache info for {unfetched_object['request_url']}")
+            headers["If-None-Match"] = unfetched_object['potential_etag']
+
+        try:
+            obj_response = requests.get(unfetched_object['request_url'], headers=headers, proxies=proxies)
+        except Exception:
+            print(f"failed to download unfetched object {unfetched_object}")
+            continue
+
+        if not obj_response.ok:
+            print(f"failed to download unfetched object {unfetched_object} with response {obj_response.status_code}")
+            continue
+
+        if obj_response.status_code == 304:
+            print(f"object cache hit for {unfetched_object}")
+            continue
 
 
 if __name__ == "__main__":

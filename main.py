@@ -4,7 +4,9 @@ from typing import List
 import requests
 import os
 from bs4 import BeautifulSoup
-import sys, signal
+import sys
+import signal
+from proxy_fetcher import proxy_fetcher_factory
 
 task_interval = int(os.environ.get("TASK_INTERVAL", 5))
 server_address = os.environ["DL_SCRIPT_ADDRESS"]
@@ -25,9 +27,7 @@ def signal_handler(signal, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
-proxies = {}
-if "PROXYADDRESS" in os.environ:
-    proxies = {"https": os.environ["PROXYADDRESS"]}
+proxy_fetcher = proxy_fetcher_factory()
 
 formats = {"pdf": "application/pdf",
            "epub": "application/epub+zip",
@@ -44,6 +44,8 @@ def do_task():
     if job_info["status"] == "queue empty":
         print("No jobs available in queue")
         return
+
+    proxies = proxy_fetcher.get_proxy()
 
     print(f"downloading {job_info['work_id']} updated at {job_info['updated']} in {job_info['work_format']} format...")
     dl_response = requests.get(

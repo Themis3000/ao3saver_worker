@@ -47,6 +47,7 @@ def do_task():
         return
 
     proxy = proxy_fetcher.get_proxy()
+    requesting_ip = proxy.address if isinstance(proxy, ProxyInfoExtended) else "unknown"
 
     print(f"downloading {job_info['work_id']} updated at {job_info['updated']} in {job_info['work_format']} format...")
     dl_response = requests.get(
@@ -61,6 +62,7 @@ def do_task():
                                       json={
                                           "dispatch_id": job_info["dispatch_id"],
                                           "report_code": job_info["report_code"],
+                                          "requesting_ip": requesting_ip,
                                           "fail_status": dl_response.status_code})
         if not fail_response.ok:
             print("couldn't report failed job")
@@ -114,7 +116,6 @@ def do_task():
                 break
 
     print(f"successfully downloaded {job_info['work_id']} updated at {job_info['updated']}, reporting to server...")
-    requesting_ip = proxy.address if isinstance(proxy, ProxyInfoExtended) else "unknown"
     submit_res = requests.post(submit_endpoint,
                                headers=auth_header,
                                files=[("work", ("work", data, "")), *images],

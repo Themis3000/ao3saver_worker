@@ -1,1 +1,1 @@
-from proxy_factory import proxy_fetcher_factory
+from .proxy_factory import proxy_fetcher_factory

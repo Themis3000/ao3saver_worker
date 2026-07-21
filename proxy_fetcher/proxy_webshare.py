@@ -1,8 +1,8 @@
 import requests
 import os
 from .proxy_base import ProxyBase, ProxyInfoExtended
-from .utils import forever_iter
 from typing import List
+import random
 
 
 class ProxyWebshare(ProxyBase):
@@ -11,7 +11,6 @@ class ProxyWebshare(ProxyBase):
         if self.api_key is None:
             raise Exception("Could not init ProxyWebshare! No API key found")
         self.proxies: List[ProxyInfoExtended] = []
-        self.proxy_iter = forever_iter(self.proxies)
         self.refresh_proxies()
 
     def refresh_proxies(self):
@@ -36,7 +35,6 @@ class ProxyWebshare(ProxyBase):
             proxy_str = f"http://{username}:{password}@{address}:{port}"
             proxy_obj = ProxyInfoExtended(dict={"http": proxy_str, "https": proxy_str}, address=address)
             self.proxies.append(proxy_obj)
-        self.proxy_iter = forever_iter(self.proxies)
 
     def get_proxy(self) -> ProxyInfoExtended:
-        return next(self.proxy_iter)
+        return random.choice(self.proxies)

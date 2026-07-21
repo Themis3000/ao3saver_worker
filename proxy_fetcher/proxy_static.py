@@ -1,6 +1,5 @@
-from typing import Dict
 import os
-from .proxy_base import ProxyBase
+from .proxy_base import ProxyBase, ProxyInfo
 
 
 class ProxyStatic(ProxyBase):
@@ -8,7 +7,7 @@ class ProxyStatic(ProxyBase):
         if "PROXYADDRESS" not in os.environ:
             raise Exception("Could not init ProxyStatic, no proxy address found!")
         proxy_str = os.environ["PROXYADDRESS"]
-        self.proxy = {"http": proxy_str, "https": proxy_str}
+        self.proxy = ProxyInfo(dict={"http": proxy_str, "https": proxy_str})
 
-    def get_proxy(self) -> Dict[str, str]:
+    def get_proxy(self) -> ProxyInfo:
         return self.proxy

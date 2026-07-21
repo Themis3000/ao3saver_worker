@@ -1,7 +1,6 @@
-from typing import Dict
-from .proxy_base import ProxyBase
+from .proxy_base import ProxyBase, ProxyInfo
 
 
 class ProxyNone(ProxyBase):
-    def get_proxy(self) -> Dict[str, str]:
-        return {}
+    def get_proxy(self) -> ProxyInfo:
+        return ProxyInfo(dict={})

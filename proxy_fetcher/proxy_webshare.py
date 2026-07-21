@@ -1,8 +1,8 @@
-from typing import Dict
 import requests
 import os
-from .proxy_base import ProxyBase
+from .proxy_base import ProxyBase, ProxyInfoExtended
 from .utils import forever_iter
+from typing import List
 
 
 class ProxyWebshare(ProxyBase):
@@ -10,7 +10,7 @@ class ProxyWebshare(ProxyBase):
         self.api_key = os.environ.get("WEBSHARE_API_KEY")
         if self.api_key is None:
             raise Exception("Could not init ProxyWebshare! No API key found")
-        self.proxies = []
+        self.proxies: List[ProxyInfoExtended] = []
         self.proxy_iter = forever_iter(self.proxies)
         self.refresh_proxies()
 
@@ -25,7 +25,7 @@ class ProxyWebshare(ProxyBase):
                             f"Message: {response.text}")
         response_json = response.json()
 
-        self.proxies = []
+        self.proxies.clear()
         for proxy_info in response_json["results"]:
             if not proxy_info['valid']:
                 continue
@@ -34,8 +34,9 @@ class ProxyWebshare(ProxyBase):
             address = proxy_info['proxy_address']
             port = proxy_info['port']
             proxy_str = f"http://{username}:{password}@{address}:{port}"
-            self.proxies.append({"http": proxy_str, "https": proxy_str})
+            proxy_obj = ProxyInfoExtended(dict={"http": proxy_str, "https": proxy_str}, address=address)
+            self.proxies.append(proxy_obj)
         self.proxy_iter = forever_iter(self.proxies)
 
-    def get_proxy(self) -> Dict[str, str]:
+    def get_proxy(self) -> ProxyInfoExtended:
         return next(self.proxy_iter)

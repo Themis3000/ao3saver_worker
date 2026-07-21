@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 import sys
 import signal
 from proxy_fetcher import proxy_fetcher_factory
+from proxy_fetcher.proxy_base import ProxyInfoExtended
 
 task_interval = int(os.environ.get("TASK_INTERVAL", 5))
 server_address = os.environ["DL_SCRIPT_ADDRESS"]
@@ -45,13 +46,13 @@ def do_task():
         print("No jobs available in queue")
         return
 
-    proxies = proxy_fetcher.get_proxy()
+    proxy = proxy_fetcher.get_proxy()
 
     print(f"downloading {job_info['work_id']} updated at {job_info['updated']} in {job_info['work_format']} format...")
     dl_response = requests.get(
         f"https://download.archiveofourown.org/downloads/{job_info['work_id']}/file.{job_info['work_format']}"
         f"?updated_at={job_info['updated']}",
-        proxies=proxies)
+        proxies=proxy.dict)
     if not dl_response.ok or dl_response.headers["Content-Type"] != formats[job_info["work_format"]]:
         print(f"got response {dl_response.status_code} when requesting {job_info['work_id']} updated at"
               f" {job_info['updated']} in {job_info['work_format']} format, reporting to server...")
@@ -83,7 +84,7 @@ def do_task():
                 headers["If-None-Match"] = cache_info["etag"]
 
             print(f"fetching image {url}")
-            img_response = requests.get(url, headers=headers, proxies=proxies)
+            img_response = requests.get(url, headers=headers, proxies=proxy.dict)
 
             if not img_response.ok:
                 print("couldn't fetch image")
@@ -108,17 +109,20 @@ def do_task():
 
             # Backend does not support more than 1000 fields.
             # As a temporary measure, cap the number of images that can be archived at once.
-            if len(images_meta) >= 496:
+            if len(images_meta) >= 495:
                 print("capping images")
                 break
 
     print(f"successfully downloaded {job_info['work_id']} updated at {job_info['updated']}, reporting to server...")
+    requesting_ip = proxy.address if isinstance(proxy, ProxyInfoExtended) else "unknown"
     submit_res = requests.post(submit_endpoint,
                                headers=auth_header,
                                files=[("work", ("work", data, "")), *images],
                                data={
                                    "dispatch_id": job_info["dispatch_id"],
-                                   "report_code": job_info["report_code"], **images_meta})
+                                   "report_code": job_info["report_code"],
+                                   "requesting_ip": requesting_ip,
+                                   **images_meta})
 
     if not submit_res.ok:
         print(f"Work report has failed")

@@ -71,10 +71,10 @@ def do_task():
         return
     data = dl_response.content
 
-    # fetch any images, if this is a html page.
+    # fetch any images, if this is a html page and images are enabled
     images = []
     images_meta = {}
-    if job_info["work_format"] == "html":
+    if job_info["work_format"] == "html" and job_info["get_img"]:
         soup = BeautifulSoup(data, 'html.parser')
         img_urls: List[str] = [img['src'] for img in soup.find_all('img', src=True)]
         i = -1
@@ -86,7 +86,14 @@ def do_task():
                 headers["If-None-Match"] = cache_info["etag"]
 
             print(f"fetching image {url}")
-            img_response = requests.get(url, headers=headers, proxies=proxy.dict)
+            try:
+                img_response = requests.get(url, headers=headers, proxies=proxy.dict)
+            except requests.exceptions.ProxyError:
+                print("couldn't fetch image due to proxy connection")
+                continue
+            except requests.exceptions.RequestException:
+                print("couldn't fetch image due to some request exception")
+                continue
 
             if not img_response.ok:
                 print("couldn't fetch image")
